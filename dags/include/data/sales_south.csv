@@ -1,0 +1,13 @@
+order_id,order_date,region,product,quantity,unit_price,customer_id
+1013,2026-11-01,south,Keyboard,2,45.5,C014
+1014,2026-11-02,south,Keyboard,1,45.5,C006
+1015,2026-11-03,south,Mouse,1,19.99,C023
+1016,2026-11-04,south,Keyboard,5,45.5,C017
+1017,2026-11-05,south,Laptop,0,950.0,C035
+1018,2026-11-06,south,Laptop,4,950.0,C006
+1019,2026-11-07,south,Headset,3,79.0,C040
+1020,2026-11-08,south,Keyboard,5,45.5,C013
+1021,2026-11-09,south,Webcam,1,59.9,C003
+1022,2026-11-01,south,Webcam,2,59.9,C019
+1023,2026-11-02,south,Laptop,2,950.0,C007
+1024,2026-11-03,south,Mouse,3,19.99,C030

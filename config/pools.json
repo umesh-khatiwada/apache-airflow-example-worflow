@@ -1,0 +1,12 @@
+{
+  "api_pool": {
+    "slots": 2,
+    "description": "Limits how many tasks may call the (pretend) external API at the same time",
+    "include_deferred": false
+  },
+  "database_pool": {
+    "slots": 4,
+    "description": "Limits concurrent heavy queries against the demo database",
+    "include_deferred": false
+  }
+}

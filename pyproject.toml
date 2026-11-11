@@ -1,0 +1,24 @@
+[project]
+name = "apache-airflow-learning"
+version = "1.0.0"
+description = "A complete, beginner-friendly Apache Airflow 3.4 learning project: runnable example DAGs + docs."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+# Make `tutorial_lib` (plugins/) importable in tests, exactly like inside Airflow.
+pythonpath = ["plugins", "dags"]
+testpaths = ["tests"]
+markers = [
+    "integration: runs a whole DAG with dag.test() (needs `airflow db migrate` first)",
+]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "AIR"]  # AIR = Airflow-specific rules (e.g. Airflow 3 migration)
+
+[tool.ruff.lint.isort]
+known-first-party = ["tutorial_lib", "tutorial_plugin"]

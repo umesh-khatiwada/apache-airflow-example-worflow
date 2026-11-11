@@ -1,0 +1,13 @@
+order_id,order_date,region,product,quantity,unit_price,customer_id
+1001,2026-11-01,north,Webcam,1,59.9,C002
+1002,2026-11-02,north,Webcam,3,59.9,C016
+1003,2026-11-03,north,Monitor,2,210.0,C007
+1004,2026-11-04,north,Webcam,5,59.9,C006
+1005,2026-11-05,north,Headset,4,79.0,C003
+1006,2026-11-06,north,Laptop,1,950.0,C014
+1007,2026-11-07,north,Monitor,5,210.0,C039
+1008,2026-11-08,north,Laptop,5,950.0,C013
+1009,2026-11-09,north,Webcam,5,59.9,C027
+1010,2026-11-01,north,Monitor,4,210.0,C038
+1011,2026-11-02,north,Keyboard,1,45.5,C011
+1012,2026-11-03,north,Webcam,4,59.9,C022

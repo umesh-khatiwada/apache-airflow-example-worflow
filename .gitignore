@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Airflow runtime files
+logs/*
+!logs/.gitkeep
+.airflow_local/
+airflow.db
+config/airflow.cfg
+standalone_admin_password.txt
+simple_auth_manager_passwords.json.generated
+
+# Secrets / local env
+.env
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Files written by the example DAGs
+data/*
+!data/.gitkeep

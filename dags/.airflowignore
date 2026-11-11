@@ -1,0 +1,3 @@
+# Paths the DAG processor should NOT scan for DAGs.
+# Airflow 3 uses glob syntax by default (like .gitignore).
+include/

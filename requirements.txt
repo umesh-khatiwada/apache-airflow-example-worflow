@@ -1,0 +1,6 @@
+# Extra Python packages for the Airflow Docker image (used only with `build: .`).
+# The official image already contains: postgres, http, common-sql, standard, fab,
+# celery, cncf-kubernetes, amazon, google, ... providers, plus pandas.
+# Examples:
+# apache-airflow-providers-slack
+# requests-cache==1.2.1

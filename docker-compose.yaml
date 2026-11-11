@@ -1,0 +1,217 @@
+# =============================================================================
+#  Apache Airflow 3.4 — local learning environment
+# =============================================================================
+#  Based on the official file:
+#    https://airflow.apache.org/docs/apache-airflow/3.4.0/docker-compose.yaml
+#
+#  Changes from the official file (to keep it light for beginners):
+#    * LocalExecutor instead of CeleryExecutor -> no Redis, no Celery worker.
+#      (see docs/29-executors-and-production.md to switch back to Celery)
+#    * Bundled example DAGs are turned OFF so you only see this project's DAGs.
+#    * A second Postgres database called `demo` is created for the tutorial DAGs.
+#    * Tutorial connections, variables and pools are pre-configured.
+#
+#  WARNING: for local development only. Not a production deployment.
+#
+#  Quick start:
+#     cp .env.example .env
+#     docker compose up airflow-init        # one time: DB migrate + admin user
+#     docker compose up -d                  # start everything
+#     open http://localhost:8080            # login airflow / airflow
+# =============================================================================
+---
+x-airflow-common:
+  &airflow-common
+  # To add Python packages, edit requirements.txt, comment out `image:` and
+  # uncomment `build: .` — then run `docker compose build`.
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.4.0}
+  # build: .
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    &airflow-common-env
+    # ---- Core ---------------------------------------------------------------
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY:-}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-airflow_jwt_secret}
+    AIRFLOW__API_AUTH__JWT_ISSUER: ${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # ---- Learning-friendly settings ----------------------------------------
+    # Look for new/changed DAG files every 30s (default is 5 minutes).
+    AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: '30'
+    # Show the "Test" button on connections and the config page in the UI.
+    AIRFLOW__CORE__TEST_CONNECTION: 'Enabled'
+    AIRFLOW__API__EXPOSE_CONFIG: 'true'
+    # ---- Tutorial connections (AIRFLOW_CONN_<CONN_ID>) -----------------------
+    # Connections defined as env vars do NOT show in the UI list, but every DAG can use them.
+    AIRFLOW_CONN_DEMO_POSTGRES: '{"conn_type": "postgres", "host": "postgres", "port": 5432, "login": "airflow", "password": "airflow", "schema": "demo"}'
+    AIRFLOW_CONN_FS_DEFAULT: '{"conn_type": "fs", "extra": {"path": "/"}}'
+    AIRFLOW_CONN_OPEN_METEO_API: '{"conn_type": "http", "host": "https://api.open-meteo.com"}'
+    # ---- Tutorial variables (AIRFLOW_VAR_<KEY>) -------------------------------
+    AIRFLOW_VAR_ENVIRONMENT: 'docker-local'
+    AIRFLOW_VAR_TUTORIAL_SETTINGS: '{"team": "data-platform", "row_limit": 100, "notify": false}'
+    # ---- Misc ---------------------------------------------------------------
+    # Only for quick experiments: packages installed at EVERY container start.
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+  volumes:
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    # Shared folder the sensor and file examples write to / read from.
+    - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    &airflow-common-depends-on
+    postgres:
+      condition: service_healthy
+
+services:
+  # Metadata database (Airflow's own state) + the `demo` database used by DAGs.
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+      # Runs only the FIRST time the volume is created: creates the `demo` DB.
+      - ./scripts/postgres-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Exposed so you can inspect tables with psql/DBeaver: localhost:5432
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  # Serves the UI (http://localhost:8080), the public REST API (/api/v2)
+  # and the Execution API that running tasks talk to (/execution).
+  airflow-apiserver:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Decides WHAT should run and WHEN. With LocalExecutor it also runs the tasks.
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-apiserver:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Parses the Python files in dags/ and stores the DAG structure in the DB.
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Runs async "triggers" for deferrable operators/sensors and deadline callbacks.
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  # One-shot container: migrates the DB, creates the admin user and the pools.
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    # yamllint disable rule:line-length
+    command:
+      - -c
+      - |
+        if [[ -z "${AIRFLOW_UID}" ]]; then
+          echo
+          echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set! Create a .env file (cp .env.example .env).\e[0m"
+          echo
+          export AIRFLOW_UID=$$(id -u)
+        fi
+        mkdir -v -p /opt/airflow/{logs,dags,plugins,config,data}
+        echo "Airflow version:"
+        /entrypoint airflow version
+        echo "Creating default config file if missing."
+        /entrypoint airflow config list >/dev/null
+        echo "Creating tutorial pools from config/pools.json"
+        _AIRFLOW_DB_MIGRATE=false _AIRFLOW_WWW_USER_CREATE=false /entrypoint airflow pools import /opt/airflow/config/pools.json
+        echo "Fixing file ownership to ${AIRFLOW_UID:-50000}:0"
+        chown -R "${AIRFLOW_UID:-50000}:0" /opt/airflow/{logs,dags,plugins,config,data}
+        echo "airflow-init finished OK"
+    # yamllint enable rule:line-length
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _PIP_ADDITIONAL_REQUIREMENTS: ''
+    user: "0:0"
+
+  # Run any airflow CLI command:  docker compose run --rm airflow-cli dags list
+  airflow-cli:
+    <<: *airflow-common
+    profiles:
+      - debug
+    environment:
+      <<: *airflow-common-env
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    command:
+      - bash
+      - -c
+      - airflow
+    depends_on:
+      <<: *airflow-common-depends-on
+
+volumes:
+  postgres-db-volume:
