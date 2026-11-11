@@ -47,5 +47,6 @@ Read in order if you're new to Airflow. Every chapter from 05 onwards has a DAG 
 31. [Airflow 2 vs Airflow 3](31-airflow-2-vs-3.md)
 32. [Glossary](32-glossary.md)
 33. [Exercises & mini-projects](33-exercises.md)
+34. [Deploy to DigitalOcean with SkyPilot](34-deploy-digitalocean-skypilot.md)
 
 ← [Back to the project README](../README.md)

@@ -245,7 +245,7 @@ The project's loop sets `catchup=False` for every DAG, and `14_schedule_catchup_
 "14_schedule_catchup_backfill": (
     # Data-interval timetables: the run for 2026-11-01 covers [11-01, 11-02) and
     # starts AFTER that interval ends. catchup=True creates a run for every missed
-    # interval between start_date and now (bounded here by end_date -> 6 runs).
+    # interval between start_date and now (bounded here by end_date -> 7 runs, Nov 1-7).
     CronDataIntervalTimetable("@daily", timezone="UTC"),
     {
         "start_date": pendulum.datetime(2026, 11, 1, tz="UTC"),
@@ -259,8 +259,7 @@ The project's loop sets `catchup=False` for every DAG, and `14_schedule_catchup_
 When you unpause it, the Grid view fills with the missed days, at most two running at a time because
 of `max_active_runs=2`. Asking Airflow 3.4.0's scheduling logic for this exact DAG returns **seven**
 runs, with logical dates 1 Nov to 7 Nov. The last one covers 7 Nov 00:00 → 8 Nov 00:00: `end_date` is
-compared with the *start* of each interval, so 7 Nov is still allowed. (The code comment says "6
-runs"; trust the Grid view.)
+compared with the *start* of each interval, so 7 Nov is still allowed.
 
 ### Backfill
 

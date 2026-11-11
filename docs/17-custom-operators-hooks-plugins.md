@@ -477,7 +477,7 @@ class TutorialPlugin(AirflowPlugin):
 The macros become available under the plugin's `name`. The DAG uses one in a `BashOperator`:
 
 ```python
-    plugin_macro = BashOperator(
+    use_plugin_macro = BashOperator(
         task_id="use_plugin_macro",
         bash_command="echo '{{ macros.tutorial_plugin.to_upper(\"custom plugins are loaded\") }}'",
     )
@@ -564,7 +564,7 @@ its XCom return value. For a mapped operator it is the *list* of all copies' ret
             print(f"{result['file']}: {result['rows']} rows OK")
 
     wait_for_sample >> quality
-    compare(kathmandu.output, oslo.output, quality.output) >> plugin_macro
+    compare(kathmandu.output, oslo.output, quality.output) >> use_plugin_macro
 ```
 
 Passing `.output` values into `compare(...)` also creates the dependencies

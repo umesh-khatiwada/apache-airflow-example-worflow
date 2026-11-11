@@ -42,7 +42,10 @@ def task_groups():
             print(f"Validating {path}")
             return path
 
-        return validate(download(source))
+        # No `return` here: the call then gives back the TaskGroup itself, so
+        # `start >> group` connects to the group's FIRST task (download).
+        # Returning validate(...) would make `start >> group` point at validate only.
+        validate(download(source))
 
     # Reuse the same group twice. group_id must be unique -> override() it.
     customers = ingest.override(group_id="ingest_customers")("customers")

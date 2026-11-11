@@ -38,7 +38,8 @@ def _print_context(**context) -> str:
     """A normal Python function. `context` holds run information (dates, run_id, task instance...)."""
     print(f"DAG id:       {context['dag'].dag_id}")
     print(f"Run id:       {context['run_id']}")
-    print(f"Logical date: {context['logical_date']}")
+    # .get(): runs triggered from the CLI/API without a logical date don't have one.
+    print(f"Logical date: {context.get('logical_date')}")
     print(f"Task:         {context['ti'].task_id}, try number {context['ti'].try_number}")
     # Whatever a python_callable returns is stored as an XCom (see example 04).
     return "Hello from Python!"

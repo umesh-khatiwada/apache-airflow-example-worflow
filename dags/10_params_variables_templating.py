@@ -13,6 +13,9 @@
 **Try it:** Trigger ▸ fill the form ▸ Trigger. Then look at a task's **Rendered
 Template** tab to see what each `{{ }}` became.
 
+> `ds`, `ds_nodash` and `logical_date` only exist when the run has a logical date. The UI
+> Trigger form fills one in; from the CLI use `airflow dags trigger -l <date> ...`.
+
 📖 docs/14-params-variables-templating.md
 """
 

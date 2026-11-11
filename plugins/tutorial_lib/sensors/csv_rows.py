@@ -31,6 +31,7 @@ class CsvHasRowsSensor(BaseSensorOperator):
         if not path.exists():
             self.log.info("Waiting for %s to appear...", path)
             return PokeReturnValue(is_done=False)
-        data_rows = max(sum(1 for _ in path.open()) - 1, 0)  # minus header line
+        with path.open() as f:
+            data_rows = max(sum(1 for _ in f) - 1, 0)  # minus header line
         self.log.info("%s has %s data rows (need %s)", path, data_rows, self.min_rows)
         return PokeReturnValue(is_done=data_rows >= self.min_rows, xcom_value=data_rows)

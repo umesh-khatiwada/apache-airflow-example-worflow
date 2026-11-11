@@ -20,6 +20,7 @@ runs. The DAG run is still marked **failed** (teardown results don't hide failur
 
 from __future__ import annotations
 
+import re
 import shutil
 
 import pendulum
@@ -39,8 +40,9 @@ from tutorial_lib.paths import DATA_DIR
 )
 def setup_teardown():
     @setup
-    def create_workspace(ts_nodash=None) -> str:
-        workspace = DATA_DIR / "workspaces" / ts_nodash
+    def create_workspace(run_id=None) -> str:
+        # run_id always exists (logical_date may not); make it safe for a folder name.
+        workspace = DATA_DIR / "workspaces" / re.sub(r"[^A-Za-z0-9_-]", "_", run_id)
         workspace.mkdir(parents=True, exist_ok=True)
         print(f"Created {workspace}")
         return str(workspace)

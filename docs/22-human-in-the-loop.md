@@ -186,7 +186,7 @@ HITLBranchOperator(
 ### 5. `HITLOperator`: a generic choice with a default
 
 ```python
-rating = HITLOperator(
+rate_this_tutorial = HITLOperator(
     task_id="rate_this_tutorial",
     subject="How useful was this example?",
     options=["⭐", "⭐⭐", "⭐⭐⭐"],
@@ -198,10 +198,10 @@ rating = HITLOperator(
 def thank_you(answer: dict):
     print(f"You chose {answer['chosen_options']} — thanks!")
 
-thank_you(rating.output)
+thank_you(rate_this_tutorial.output)
 ```
 
-`rating.output` is the operator's XCom result. Passing it into a TaskFlow task works the same
+`rate_this_tutorial.output` is the operator's XCom result. Passing it into a TaskFlow task works the same
 way as with any classic operator ([chapter 08](08-xcom.md)).
 
 ---

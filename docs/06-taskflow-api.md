@@ -161,17 +161,17 @@ If a task does not use another task's output but must still run after it, add th
 ```python
     # Classic operators mix fine with TaskFlow. Here we read the XCom of `load`
     # with Jinja, and set the dependency with >>.
-    classic = BashOperator(
+    classic_bash_reads_xcom = BashOperator(
         task_id="classic_bash_reads_xcom",
         bash_command="echo 'load returned: {{ ti.xcom_pull(task_ids=\"load\") }}'",
     )
-    message >> classic
+    message >> classic_bash_reads_xcom
 ```
 
 Two things to notice:
 
 - The classic `BashOperator` cannot take `message` as a Python argument. Instead it reads `load`'s XCom inside a **Jinja template** with `ti.xcom_pull(task_ids="load")`.
-- Pulling an XCom in a template does **not** create a dependency, so `message >> classic` adds it. The `>>` works directly on the `XComArg` placeholder.
+- Pulling an XCom in a template does **not** create a dependency, so `message >> classic_bash_reads_xcom` adds it. The `>>` works directly on the `XComArg` placeholder.
 
 You can also go the other way: pass a classic operator's output into a `@task` with `operator.output`, e.g. `my_task(bash_op.output)`. `.output` is an `XComArg` for that operator's `return_value`.
 
@@ -262,7 +262,7 @@ extract.override(task_id="extract_us")()
 - **Naming clashes with context keys.** A parameter called `params`, `ds`, `ti`, `run_id` … is always filled from the context. Don't use those names for your own data, and don't give them a default other than `None`.
 - **Returning big or non-serializable objects** (DataFrames, open files, clients). Write the data somewhere and return a path; see [08-xcom.md](08-xcom.md).
 - **Surprise `multiple_outputs`.** A `-> dict` annotation unrolls the dict into separate XComs. Usually harmless, but it fails if a key is not a string.
-- **Assuming a Jinja `xcom_pull` adds a dependency.** It doesn't; add `>>` yourself, as the example does with `message >> classic`.
+- **Assuming a Jinja `xcom_pull` adds a dependency.** It doesn't; add `>>` yourself, as the example does with `message >> classic_bash_reads_xcom`.
 
 ## Try it yourself
 

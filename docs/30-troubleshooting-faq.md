@@ -15,7 +15,7 @@
 |---|---|
 | DAGs not visible | [DAG doesn't show up](#my-dag-doesnt-show-up-in-the-ui) · [Import error banner](#theres-a-red-import-errors-banner) |
 | DAGs not running | [Nothing happens](#my-dag-is-in-the-list-but-never-runs) · [Stuck in queued/scheduled](#tasks-are-stuck-in-queued-or-scheduled) · [Stuck deferred](#tasks-are-stuck-in-deferred) · [HITL waiting](#a-human-in-the-loop-task-waits-forever) · [Sensors hogging slots](#sensors-are-using-all-my-slots) |
-| Data & templates | [`logical_date` is None](#logical_date-ds-or-ts_nodash-is-none-or-empty) · [Jinja not rendering](#my--jinja--isnt-rendered) · [XCom too large](#xcom-is-too-large--the-ui-is-slow) · [Connection not found](#the-conn_id-isnt-defined) · [Variable not found](#a-variable-is-not-found) · [Timezones](#times-are-off-by-a-few-hours) |
+| Data & templates | [`logical_date` is None](#logical_date-ds-or-ts_nodash-is-none-or-undefined) · [Jinja not rendering](#my--jinja--isnt-rendered) · [XCom too large](#xcom-is-too-large--the-ui-is-slow) · [Connection not found](#the-conn_id-isnt-defined) · [Variable not found](#a-variable-is-not-found) · [Timezones](#times-are-off-by-a-few-hours) |
 | Tasks dying | [Zombie / killed tasks](#tasks-fail-with-no-error-in-the-log-zombie--killed-tasks) |
 | Docker | [`demo` DB missing](#database-demo-does-not-exist) · [Permission denied on logs/](#permission-denied-on-logs-linux) · [Port 8080 in use](#port-8080-is-already-in-use) · [Out of memory](#containers-keep-restarting-or-get-killed-out-of-memory) · [`docker compose` vs `docker-compose`](#docker-compose-vs-docker-compose) · [Reset everything](#how-do-i-reset-everything-and-start-fresh) |
 
@@ -79,7 +79,7 @@ The test suite catches all of these before you deploy: `make test` runs `test_no
    ```
 2. **`schedule=None`.** Most examples here (`02_*` to `13_*`) only run when you press **Trigger**. That's intentional.
 3. **`start_date` is in the future.** Nothing is scheduled before it. Check the *Next run* column, or `airflow dags next-execution <dag_id>`.
-4. **The first interval hasn't ended yet.** With a data-interval schedule such as `"@daily"`, the run for a day starts *after* that day ends. A DAG unpaused at 10:00 runs its first daily run at the next midnight UTC. See [18-scheduling-and-timetables.md](18-scheduling-and-timetables.md).
+4. **The next scheduled time hasn't come yet.** In Airflow 3 a cron string such as `"@daily"` uses `CronTriggerTimetable`: the run fires *at* the cron time (midnight UTC). With `catchup=False`, unpausing creates at most the most recent missed run, then waits for the next tick. With a data-interval timetable (`CronDataIntervalTimetable`, used by `14_schedule_catchup_backfill`) the run for a day starts only *after* that day ends. The *Next run* column shows when the next one is due. See [18-scheduling-and-timetables.md](18-scheduling-and-timetables.md).
 5. **`catchup=False` (the Airflow 3 default)** means missed intervals aren't run; you only get the latest one. Use a backfill for history: `airflow backfill create --dag-id <id> --from-date 2026-11-01 --to-date 2026-11-07`, or the UI.
 6. **`max_active_runs` is reached.** For example `14_schedule_catchup_backfill` has `max_active_runs=2`; `15_pools_priority_concurrency` and the capstone have `1`. Further runs wait until a running one finishes.
 7. **An `end_date` has passed**, as in `14_schedule_catchup_backfill` (ends 2026-11-07).
@@ -137,11 +137,11 @@ See [12-sensors-and-deferrable.md](12-sensors-and-deferrable.md).
 
 ## Data, templates and configuration
 
-### `logical_date`, `ds` or `ts_nodash` is None (or empty)
+### `logical_date`, `ds` or `ts_nodash` is None or undefined
 
-**Symptom:** a task fails with `TypeError: ... NoneType`, a path contains `None`, or `{{ ds }}` renders as an empty string.
+**Symptom:** a task fails with `TypeError: ... NoneType`, a path contains `None`, or a template fails with `jinja2.exceptions.UndefinedError: 'ds' is undefined`.
 
-**Cause:** in Airflow 3, a DAG run may have **no logical date**. Then `logical_date`, `ds`, `ds_nodash`, `ts`, `ts_nodash` and the data interval keys are simply missing from the context. This happens for:
+**Cause:** in Airflow 3, a DAG run may have **no logical date**. Then `logical_date`, `ds`, `ds_nodash`, `ts`, `ts_nodash` and the data interval keys are missing from the context. A TaskFlow argument such as `ts_nodash=None` stays `None`, and a template that uses `{{ ds }}` fails, because DAGs render templates with Jinja's `StrictUndefined` by default. This happens for:
 - runs triggered with `airflow dags trigger <dag_id>` **without** `-l/--logical-date`;
 - runs triggered through the REST API with `"logical_date": null`;
 - **asset-triggered** runs (`09_assets_consumer`, `20_capstone_sales_report`, ...);
@@ -159,7 +159,7 @@ See [12-sensors-and-deferrable.md](12-sensors-and-deferrable.md).
 - Use something that always exists: `run_id`, `dag_run.run_after`, or `ts_nodash` with a fallback.
 - When triggering from the CLI, pass a date: `airflow dags trigger 08_sensors_and_deferrable -l 2026-11-11T10:00:00+00:00`.
 
-Examples in this project that expect a logical date: `08_sensors_and_deferrable` (file names use `ts_nodash`), `16_setup_teardown` (workspace folder uses `ts_nodash`) and `10_params_variables_templating` (`days_between(..., ds)`). Trigger them from the UI with the pre-filled date.
+Examples in this project that expect a logical date: `08_sensors_and_deferrable` (file names use `ts_nodash`), `01_hello_airflow` (`{{ ds }}` in `say_hello`) and `10_params_variables_templating` (`days_between(..., ds)`). `16_setup_teardown` names its folder after `run_id`, so it works either way. Trigger them from the UI with the pre-filled date.
 
 ### My `{{ jinja }}` isn't rendered
 
@@ -307,7 +307,7 @@ This removes all DAG runs, task history, connections/variables created in the UI
 
 - **Not unpausing the DAG.** New DAGs start paused in this project.
 - **Reading only the UI.** Many problems (import errors, triggerer down) are clearest in `airflow dags list-import-errors` and `docker compose logs`.
-- **Triggering from the CLI without `-l`**, then wondering why `ds` is empty.
+- **Triggering from the CLI without `-l`**, then wondering why `ds` is undefined.
 - **Running `make reset` to "fix" something** and losing history you wanted. Try restarting the one broken service first: `docker compose restart airflow-scheduler`.
 - **Changing ports or env vars in only one place** (the compose file but not `scripts/local_env.sh`, or the other way round).
 

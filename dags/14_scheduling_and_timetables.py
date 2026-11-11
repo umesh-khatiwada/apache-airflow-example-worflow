@@ -66,7 +66,7 @@ SCHEDULES = {
     "14_schedule_catchup_backfill": (
         # Data-interval timetables: the run for 2026-11-01 covers [11-01, 11-02) and
         # starts AFTER that interval ends. catchup=True creates a run for every missed
-        # interval between start_date and now (bounded here by end_date -> 6 runs).
+        # interval between start_date and now (bounded here by end_date -> 7 runs, Nov 1-7).
         CronDataIntervalTimetable("@daily", timezone="UTC"),
         {
             "start_date": pendulum.datetime(2026, 11, 1, tz="UTC"),

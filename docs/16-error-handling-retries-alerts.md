@@ -53,7 +53,7 @@ default_args = {
     "owner": "tutorial",
     "retries": 3,
     "retry_delay": timedelta(seconds=5),
-    "retry_exponential_backoff": 2.0,  # wait 5s, 10s, 20s… (multiplier)
+    "retry_exponential_backoff": 2.0,  # wait ~5s, ~10s, ~20s… (multiplier, plus random jitter)
     "max_retry_delay": timedelta(minutes=1),  # …but never more than 1 minute
     "execution_timeout": timedelta(minutes=10),  # kill any task running longer than this
     "on_failure_callback": task_failure_alert,

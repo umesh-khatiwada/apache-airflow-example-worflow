@@ -112,11 +112,11 @@ After a branch, one upstream of `join` is always skipped. Here is what happens w
 
 ```mermaid
 flowchart LR
-    subgraph default["trigger_rule = all_success (default)"]
+    subgraph sg_default["trigger_rule = all_success (default)"]
         A1["process_small<br/>SKIPPED"] --> J1["join<br/>SKIPPED ✗"]
         B1["process_large<br/>SUCCESS"] --> J1
     end
-    subgraph fixed["trigger_rule = none_failed_min_one_success"]
+    subgraph sg_fixed["trigger_rule = none_failed_min_one_success"]
         A2["process_small<br/>SKIPPED"] --> J2["join<br/>RUNS ✓"]
         B2["process_large<br/>SUCCESS"] --> J2
     end

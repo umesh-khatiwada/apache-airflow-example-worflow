@@ -66,17 +66,19 @@ flowchart LR
 
 ```python
 @setup
-def create_workspace(ts_nodash=None) -> str:
-    workspace = DATA_DIR / "workspaces" / ts_nodash
+def create_workspace(run_id=None) -> str:
+    # run_id always exists (logical_date may not); make it safe for a folder name.
+    workspace = DATA_DIR / "workspaces" / re.sub(r"[^A-Za-z0-9_-]", "_", run_id)
     workspace.mkdir(parents=True, exist_ok=True)
     print(f"Created {workspace}")
     return str(workspace)
 ```
 
 `@setup` turns the function into a TaskFlow task (like `@task`) and marks it as a setup task.
-It creates a folder under `data/workspaces/` named after the run's timestamp (`ts_nodash` is a
-template variable injected because it appears in the signature, see
-[chapter 14](14-params-variables-templating.md)) and returns the path, which goes to XCom.
+It creates a folder under `data/workspaces/` named after the run id (`run_id` is a
+context value injected because it appears in the signature, see
+[chapter 14](14-params-variables-templating.md); unlike `ts_nodash` it exists even when a run has
+no logical date) and returns the path, which goes to XCom.
 
 ### The work tasks
 
@@ -127,15 +129,15 @@ Because a teardown's argument comes from a setup task, Airflow records the two a
 ### Classic operators: `.as_teardown(setups=...)`
 
 ```python
-start_service = BashOperator(task_id="start_fake_service", bash_command="echo 'service started'")
-use_service = BashOperator(task_id="use_fake_service", bash_command="echo 'using service'")
-stop_service = BashOperator(task_id="stop_fake_service", bash_command="echo 'service stopped'")
-start_service >> use_service >> stop_service.as_teardown(setups=start_service)
+start_fake_service = BashOperator(task_id="start_fake_service", bash_command="echo 'service started'")
+use_fake_service = BashOperator(task_id="use_fake_service", bash_command="echo 'using service'")
+stop_fake_service = BashOperator(task_id="stop_fake_service", bash_command="echo 'service stopped'")
+start_fake_service >> use_fake_service >> stop_fake_service.as_teardown(setups=start_fake_service)
 ```
 
 Classic operators have no decorator, so you mark them with methods:
 
-- `stop_service.as_teardown(setups=start_service)` marks `stop_fake_service` as a teardown **and**
+- `stop_fake_service.as_teardown(setups=start_fake_service)` marks `stop_fake_service` as a teardown **and**
   marks `start_fake_service` as a setup **and** adds the dependency `start_fake_service >> stop_fake_service`.
 - `.as_setup()` also exists if you only want to mark a task as a setup.
 
@@ -228,7 +230,7 @@ If cleanup failures matter to you, opt in:
 def delete_workspace(workspace: str) -> None: ...
 
 # or, for classic operators
-stop_service.as_teardown(setups=start_service, on_failure_fail_dagrun=True)
+stop_fake_service.as_teardown(setups=start_fake_service, on_failure_fail_dagrun=True)
 ```
 
 With `on_failure_fail_dagrun=True` the teardown counts as a leaf again, so if it fails, the DAG

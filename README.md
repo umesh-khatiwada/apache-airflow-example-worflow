@@ -1,8 +1,8 @@
 # Apache Airflow 3.4 — Learn by Example
 
 A complete, beginner-friendly learning project for [Apache Airflow](https://airflow.apache.org).
-It has **20 runnable example DAG files (38 DAGs)** that cover every major feature, a realistic
-capstone ETL pipeline, custom operators/hooks/sensors, a test suite, and **33 documentation chapters**
+It has **20 runnable example DAG files (37 DAGs)** that cover every major feature, a realistic
+capstone ETL pipeline, custom operators/hooks/sensors, a test suite, and **34 documentation chapters**
 that explain everything from "what is a DAG?" to production deployment.
 
 Everything targets **Airflow 3.4.0** (released November 2026) and uses the modern `airflow.sdk` API.
@@ -78,7 +78,8 @@ Follow the chapters in order. Each one explains a feature and points at a DAG yo
 Then: [UI tour](docs/25-ui-tour.md) · [CLI & REST API](docs/26-cli-and-rest-api.md) ·
 [Testing DAGs](docs/27-testing-dags.md) · [Best practices](docs/28-best-practices.md) ·
 [Executors & production](docs/29-executors-and-production.md) · [Troubleshooting](docs/30-troubleshooting-faq.md) ·
-[Airflow 2 vs 3](docs/31-airflow-2-vs-3.md) · [Glossary](docs/32-glossary.md) · [Exercises](docs/33-exercises.md)
+[Airflow 2 vs 3](docs/31-airflow-2-vs-3.md) · [Glossary](docs/32-glossary.md) · [Exercises](docs/33-exercises.md) ·
+[Deploy to DigitalOcean with SkyPilot](docs/34-deploy-digitalocean-skypilot.md)
 
 The full table of contents is in [docs/README.md](docs/README.md).
 
@@ -104,7 +105,8 @@ The full table of contents is in [docs/README.md](docs/README.md).
 │   │   └── paths.py              #   where data files live
 │   └── tutorial_plugin.py        # AirflowPlugin: macros + operator extra link
 ├── tests/                        # pytest: DAG integrity, structure, unit & integration tests
-├── docs/                         # 33 beginner-friendly chapters
+├── docs/                         # 34 beginner-friendly chapters
+├── deploy/skypilot/              # One-command cloud VM (DigitalOcean) via SkyPilot
 ├── config/pools.json             # Pools created at startup (api_pool, database_pool)
 ├── scripts/                      # Local (no-Docker) helpers + Postgres init script
 ├── data/                         # Files written by the example DAGs (git-ignored)

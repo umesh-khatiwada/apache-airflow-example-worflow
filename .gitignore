@@ -5,11 +5,11 @@ __pycache__/
 .pytest_cache/
 
 # Airflow runtime files
-logs/*
-!logs/.gitkeep
+/logs/*
+!/logs/.gitkeep
 .airflow_local/
 airflow.db
-config/airflow.cfg
+/config/airflow.cfg
 standalone_admin_password.txt
 simple_auth_manager_passwords.json.generated
 
@@ -21,6 +21,7 @@ simple_auth_manager_passwords.json.generated
 .idea/
 .vscode/
 
-# Files written by the example DAGs
-data/*
-!data/.gitkeep
+# Files written by the example DAGs (leading / = only the top-level folder,
+# so dags/include/data/ with the sample CSVs is NOT ignored — matters for rsync too)
+/data/*
+!/data/.gitkeep

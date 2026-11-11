@@ -6,14 +6,19 @@
 **deferrable** sensors (handed to the *triggerer*, freeing the worker slot).
 
 ```
-                     ┌──► wait_for_file (FileSensor, poke) ──────────┐
-start ─► drop_file ──┤                                                ├─► done
-  (writes a file     ├──► wait_for_rows (custom sensor, reschedule) ──┤
-   after ~15 s)      └──► wait_with_decorator (@task.sensor) ─────────┤
-                     wait_30_seconds (TimeDeltaSensor, deferrable) ───┘
+        ┌──► drop_file  (writes the file after ~15 s)
+        ├──► wait_for_file        (FileSensor, poke) ───────────┐
+start ──┼──► wait_for_rows        (custom sensor, reschedule) ──┼──► done
+        ├──► wait_30_seconds      (TimeDeltaSensor, deferrable) ┘
+        └──► wait_with_decorator  (@task.sensor, soft_fail)
 ```
-`drop_file` and the sensors run **in parallel**: the sensors keep checking
-until the file appears.
+All five start **in parallel** right after `start`: the sensors keep checking until
+`drop_file` has written the file. `wait_with_decorator` is not connected to `done`
+on purpose: with `soft_fail=True` a timeout would SKIP it, and that skip would
+otherwise also skip `done`.
+
+> Runs need a logical date here (`{{ ts_nodash }}`): trigger from the UI (it fills one in)
+> or with `airflow dags trigger -l <date> 08_sensors_and_deferrable`.
 
 📖 docs/12-sensors-and-deferrable.md
 """

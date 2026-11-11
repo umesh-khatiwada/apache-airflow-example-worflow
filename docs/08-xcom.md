@@ -175,7 +175,7 @@ XComs live in the metadata database, the same database the scheduler uses to run
 | file paths, S3/GCS URIs, table names | file contents, images, model weights |
 | small config dicts | anything sensitive (XComs are visible in the UI) |
 
-**Pass references, not data.** Write the data to a file, bucket or table, and push its *location*. The example does exactly this with `file_path` = `/opt/airflow/data/report.csv`. The capstone in [24-capstone-sales-etl.md](24-capstone-sales-etl.md) uses the same pattern.
+**Pass references, not data.** Write the data to a file, bucket or table, and push its *location*. The example does exactly this with `file_path` = `/opt/airflow/data/report.csv`. The capstone in [24-capstone-sales-etl.md](24-capstone-sales-etl.md) passes file paths between some of its tasks and keeps only small row sets in XCom.
 
 ---
 

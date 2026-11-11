@@ -79,7 +79,7 @@ def connections_and_hooks():
             rows=rows,
             target_fields=["city", "temperature", "windspeed", "source", "run_id"],
         )
-        # get_records / get_first / get_pandas_df run queries and return results.
+        # get_records / get_first / get_df run queries and return results.
         total = hook.get_first("SELECT COUNT(*) FROM weather_observations")[0]
         print(f"Inserted {len(rows)} rows; table now has {total} rows")
         return len(rows)

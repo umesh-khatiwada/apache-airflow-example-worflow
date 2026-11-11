@@ -89,7 +89,9 @@ This is the real power of mapping: **the number of instances comes from an upstr
 
 ### Readable labels with `map_index_template`
 
-By default the UI lists instances as `0`, `1`, `2`. `map_index_template` is a Jinja template rendered **after** each instance runs, against its context. The task puts `file_name` into the context with `get_current_context()`, so the UI shows `orders_north.csv`, `orders_south.csv`, `orders_east.csv` instead. If the template fails to render, the UI falls back to the number.
+By default the UI lists instances as `0`, `1`, `2`. `map_index_template` is a Jinja template rendered against each instance's context. Airflow tries it once before the task code runs (ignoring errors) and renders it again **after** the code finishes. The task puts `file_name` into the context with `get_current_context()`, so the final render shows `orders_north.csv`, `orders_south.csv`, `orders_east.csv` instead of numbers.
+
+> Be careful: if that final render fails (for example the template uses a variable that was never put into the context — Airflow's Jinja is strict about undefined names), the otherwise successful task instance **fails**.
 
 For classic operators you can reference the operator's own (rendered) fields, e.g. `map_index_template="{{ task.bash_command }}"`.
 

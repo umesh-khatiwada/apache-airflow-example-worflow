@@ -1,0 +1,14 @@
+# Override applied on the cloud VM (see airflow-do.yaml):
+#   docker compose -f docker-compose.yaml -f deploy/skypilot/docker-compose.remote.yaml ...
+#
+# SkyPilot does not put a firewall in front of DigitalOcean droplets, and Docker's
+# published ports bypass ufw. So we bind every published port to 127.0.0.1 only:
+# nothing is reachable from the internet. Use an SSH tunnel instead:
+#     ssh -L 8080:localhost:8080 airflow-do
+services:
+  airflow-apiserver:
+    ports: !override
+      - "127.0.0.1:8080:8080"
+  postgres:
+    ports: !override
+      - "127.0.0.1:5432:5432"

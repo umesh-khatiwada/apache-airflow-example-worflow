@@ -27,6 +27,13 @@ def test_taskflow_transform_logic(dagbag):
     assert transform({"a": 1.5, "b": 2.25}) == {"total": 3.75, "count": 2}
 
 
+def test_task_group_reuse_wires_from_start(dagbag):
+    """`start >> group` must reach the FIRST task of each reused group (regression test)."""
+    dag = dagbag.get_dag("07_task_groups")
+    assert downstream_ids(dag, "start") == {"ingest_customers.download", "ingest_orders.download"}
+    assert dag.get_task("ingest_orders.validate").downstream_task_ids == {"transform.clean.dedupe"}
+
+
 def test_branch_join_uses_correct_trigger_rule(dagbag):
     dag = dagbag.get_dag("05_branching_and_trigger_rules")
     assert dag.get_task("join").trigger_rule == "none_failed_min_one_success"

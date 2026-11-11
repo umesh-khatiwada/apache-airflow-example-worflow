@@ -53,9 +53,9 @@ def do_everything():
 
 ```python
 # Good (from 20_capstone_sales_etl): separate, retryable steps
-raw = extract.expand(region=REGIONS)            # task group per region
-transformed = transform.expand(rows=raw)         # pure Python
-loaded = load_to_postgres(transformed)           # one DB write
+transformed = process_region.expand(region=REGIONS)  # locate/validate/read/clean, per region
+loaded = load_to_postgres(transformed)                # one DB write
+create_tables >> loaded
 loaded >> build_summary >> checks >> publish(loaded, transformed)
 ```
 
@@ -107,14 +107,18 @@ def extract():
 
 ```python
 # Good: use the run's data interval (stable across retries and backfills)
-@task
-def extract(data_interval_start=None, data_interval_end=None):
-    hook = PostgresHook(postgres_conn_id="demo_postgres")
-    return hook.get_records(
-        "SELECT order_id, amount FROM orders WHERE created_at >= %(start)s AND created_at < %(end)s",
-        parameters={"start": data_interval_start, "end": data_interval_end},
-    )
+@dag(schedule=CronDataIntervalTimetable("@daily", timezone="UTC"), ...)  # a data-interval timetable
+def orders_daily():
+    @task
+    def extract(data_interval_start=None, data_interval_end=None):
+        hook = PostgresHook(postgres_conn_id="demo_postgres")
+        return hook.get_records(
+            "SELECT order_id, amount FROM orders WHERE created_at >= %(start)s AND created_at < %(end)s",
+            parameters={"start": data_interval_start, "end": data_interval_end},
+        )
 ```
+
+Watch out: in Airflow 3 a plain cron string like `schedule="@daily"` uses `CronTriggerTimetable`, whose data interval has **zero length** (start == end). The query above would then return nothing. Either use a data-interval timetable as shown (or `CronTriggerTimetable(..., interval=timedelta(days=1))`), or compute the window from `logical_date`, for example `logical_date.subtract(days=1)`. [18-scheduling-and-timetables.md](18-scheduling-and-timetables.md) explains the difference.
 
 Even randomness can be deterministic. The offline fallback in [../plugins/tutorial_lib/hooks/open_meteo.py](../plugins/tutorial_lib/hooks/open_meteo.py) seeds its random generator with the coordinates, so the same city always gets the same fake numbers (and `tests/test_custom_components.py` checks this):
 

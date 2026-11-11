@@ -81,7 +81,8 @@ def _print_context(**context) -> str:
     """A normal Python function. `context` holds run information (dates, run_id, task instance...)."""
     print(f"DAG id:       {context['dag'].dag_id}")
     print(f"Run id:       {context['run_id']}")
-    print(f"Logical date: {context['logical_date']}")
+    # .get(): runs triggered from the CLI/API without a logical date don't have one.
+    print(f"Logical date: {context.get('logical_date')}")
     print(f"Task:         {context['ti'].task_id}, try number {context['ti'].try_number}")
     # Whatever a python_callable returns is stored as an XCom (see example 04).
     return "Hello from Python!"
@@ -162,7 +163,7 @@ Every task needs a `task_id`, unique inside the DAG. The Python variable name (`
 
 `{{ ds }}` is a **Jinja template**. Before the command runs, Airflow replaces it with the logical date as `YYYY-MM-DD`. Only arguments listed in an operator's `template_fields` are templated; for `BashOperator` these are `bash_command`, `env` and `cwd`. Chapter [14](14-params-variables-templating.md) lists the other template variables.
 
-> If a run has no logical date (for example, an API-triggered run with `logical_date: null`), `ds` is not in the context and `{{ ds }}` renders as an empty string. Runs triggered from the UI's Trigger dialog get a logical date by default (the current time).
+> If a run has no logical date (for example, an API-triggered run with `logical_date: null`), `ds` is not in the context. Airflow's Jinja environment is strict about undefined names (`StrictUndefined` by default), so the task fails with a template error. Runs triggered from the UI's Trigger dialog get a logical date by default (the current time), so this doesn't happen there.
 
 The last line printed to stdout is also pushed as an XCom.
 

@@ -1,0 +1,78 @@
+# =============================================================================
+#  Run this Airflow learning stack on a DigitalOcean droplet with SkyPilot.
+# =============================================================================
+#  Launch (from the project root):
+#     sky launch -c airflow-do deploy/skypilot/airflow-do.yaml
+#  Open the UI through an SSH tunnel (nothing is exposed publicly):
+#     ssh -L 8080:localhost:8080 airflow-do      # then browse http://localhost:8080
+#  Admin password (randomly generated on the VM):
+#     ssh airflow-do 'grep _AIRFLOW_WWW_USER_PASSWORD ~/.airflow-secrets.env'
+#  Push code changes (re-syncs the project and restarts changed containers):
+#     sky launch -c airflow-do deploy/skypilot/airflow-do.yaml   # idempotent
+#  Stop paying:
+#     sky down airflow-do
+#
+#  Full guide: docs/34-deploy-digitalocean-skypilot.md
+# =============================================================================
+name: airflow-learning
+
+resources:
+  infra: do                     # DigitalOcean; region chosen by SkyPilot (cheapest)
+  instance_type: s-2vcpu-4gb    # 2 vCPU / 4 GB RAM — enough for this compose stack
+  image_id: ubuntu-24-04-x64
+  disk_size: 80                 # GB
+
+# The project folder is copied to ~/sky_workdir on the VM.
+# Files listed in .gitignore (.venv, logs, data, .env, ...) are NOT copied.
+workdir: .
+
+setup: |
+  set -euo pipefail
+  # 1) Docker Engine + compose plugin
+  if ! command -v docker >/dev/null 2>&1; then
+    curl -fsSL https://get.docker.com | sh
+  fi
+  docker compose version
+
+  # 2) Host firewall: SSH only (published Docker ports are bound to 127.0.0.1 anyway)
+  if command -v ufw >/dev/null 2>&1; then
+    ufw allow OpenSSH >/dev/null
+    ufw --force enable >/dev/null
+    ufw status | head -5
+  fi
+
+  # 3) Secrets, generated ONCE and kept outside the synced folder
+  if [ ! -f ~/.airflow-secrets.env ]; then
+    umask 077
+    {
+      echo "AIRFLOW_UID=50000"
+      echo "AIRFLOW_IMAGE_NAME=apache/airflow:3.4.0"
+      echo "_AIRFLOW_WWW_USER_USERNAME=airflow"
+      echo "_AIRFLOW_WWW_USER_PASSWORD=$(openssl rand -hex 12)"
+      echo "FERNET_KEY=$(openssl rand -base64 32 | tr '+/' '-_')"
+      echo "AIRFLOW__API_AUTH__JWT_SECRET=$(openssl rand -hex 32)"
+    } > ~/.airflow-secrets.env
+    echo "Generated ~/.airflow-secrets.env"
+  fi
+
+run: |
+  set -euo pipefail
+  cd ~/sky_workdir
+  install -m 600 ~/.airflow-secrets.env .env
+  mkdir -p logs data
+  COMPOSE="docker compose -f docker-compose.yaml -f deploy/skypilot/docker-compose.remote.yaml"
+
+  $COMPOSE pull --quiet
+  $COMPOSE up airflow-init
+  $COMPOSE up -d
+
+  echo "Waiting for the API server to become healthy..."
+  for i in $(seq 1 60); do
+    if curl -fsS http://127.0.0.1:8080/api/v2/monitor/health >/dev/null 2>&1; then
+      echo "Airflow is up."
+      break
+    fi
+    sleep 5
+  done
+  $COMPOSE ps
+  curl -fsS http://127.0.0.1:8080/api/v2/monitor/health && echo
