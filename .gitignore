@@ -25,3 +25,6 @@ simple_auth_manager_passwords.json.generated
 # so dags/include/data/ with the sample CSVs is NOT ignored — matters for rsync too)
 /data/*
 !/data/.gitkeep
+
+# Machine-specific make settings (e.g. path to sky)
+/.cloud.mk

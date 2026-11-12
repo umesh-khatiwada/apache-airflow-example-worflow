@@ -47,6 +47,25 @@ More options, including running without Docker, are in
 
 ---
 
+## Run it in the cloud (temporary VM, auto-deletes)
+
+Launch the same stack on a DigitalOcean droplet with [SkyPilot](https://docs.skypilot.co). The VM
+deletes itself after 45 minutes, and the UI is reachable only through an SSH tunnel:
+
+```bash
+make cloud-up
+```
+
+```bash
+make cloud-tunnel
+```
+
+Then open **http://localhost:8080** (user `airflow`; password from `make cloud-password`).
+One-time setup (SkyPilot plus the DigitalOcean token from Bitwarden), security notes and
+troubleshooting are in [docs/34-deploy-digitalocean-skypilot.md](docs/34-deploy-digitalocean-skypilot.md).
+
+---
+
 ## Learning path
 
 Follow the chapters in order. Each one explains a feature and points at a DAG you can run.

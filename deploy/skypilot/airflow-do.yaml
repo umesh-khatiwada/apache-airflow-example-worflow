@@ -1,18 +1,19 @@
 # =============================================================================
 #  Run this Airflow learning stack on a DigitalOcean droplet with SkyPilot.
 # =============================================================================
-#  Launch (from the project root):
-#     sky launch -c airflow-do deploy/skypilot/airflow-do.yaml
-#  Open the UI through an SSH tunnel (nothing is exposed publicly):
-#     ssh -L 8080:localhost:8080 airflow-do      # then browse http://localhost:8080
-#  Admin password (randomly generated on the VM):
-#     ssh airflow-do 'grep _AIRFLOW_WWW_USER_PASSWORD ~/.airflow-secrets.env'
-#  Push code changes (re-syncs the project and restarts changed containers):
-#     sky launch -c airflow-do deploy/skypilot/airflow-do.yaml   # idempotent
-#  Stop paying:
-#     sky down airflow-do
+#  Easiest: use the make targets from the project root (see `make help`):
+#     make cloud-up        # launch; VM deletes itself after 45 min
+#     make cloud-tunnel    # UI at http://localhost:8080 (keep open)
+#     make cloud-password  # login airflow / <password>
+#     make cloud-down      # delete now
 #
-#  Full guide: docs/34-deploy-digitalocean-skypilot.md
+#  What `make cloud-up` runs:
+#     sky launch -c airflow-do deploy/skypilot/airflow-do.yaml -y -i 45 --down --wait-for none
+#       -i 45 --down       -> tear down (delete, not stop) after 45 minutes
+#       --wait-for none    -> hard deadline: SSH sessions/jobs do NOT reset the timer
+#  Re-running it on an existing cluster re-syncs the code, re-runs setup/run and re-arms the timer.
+#
+#  Full guide: docs/34-deploy-digitalocean-skypilot.md · runbook: deploy/skypilot/README.md
 # =============================================================================
 name: airflow-learning
 
@@ -28,6 +29,14 @@ workdir: .
 
 setup: |
   set -euo pipefail
+  # 0) A fresh droplet runs cloud-init / unattended-upgrades right after boot and holds
+  #    the apt lock; installing at the same time fails with "Could not get lock".
+  cloud-init status --wait >/dev/null 2>&1 || true
+  for i in $(seq 1 60); do
+    pgrep -x apt-get >/dev/null || pgrep -x dpkg >/dev/null || pgrep -f unattended-upgr >/dev/null || break
+    echo "waiting for background apt/dpkg to finish..."; sleep 5
+  done
+
   # 1) Docker Engine + compose plugin
   if ! command -v docker >/dev/null 2>&1; then
     curl -fsSL https://get.docker.com | sh
