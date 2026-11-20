@@ -1,5 +1,10 @@
 # Apache Airflow 3.4 — Learn by Example
 
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Airflow](https://img.shields.io/badge/Apache%20Airflow-3.4.0-017CEE)
+![Docker Compose](https://img.shields.io/badge/docker-compose-2496ED)
+
 A complete, beginner-friendly learning project for [Apache Airflow](https://airflow.apache.org).
 It has **20 runnable example DAG files (38 DAGs)** that cover every major feature, a realistic
 capstone ETL pipeline, custom operators/hooks/sensors, a test suite, and **33 documentation chapters**
@@ -48,6 +53,9 @@ More options, including running without Docker, are in
 ---
 
 ## Learning path
+
+> **TODO:** the guide currently contains 20 of the 33 planned chapters. Links to chapters
+> 02, 03, 04, 11, 12, 13, 14, 21, 25, 26, 31, 32 and 33 below point to files that are not yet in the repository.
 
 Follow the chapters in order. Each one explains a feature and points at a DAG you can run.
 
@@ -128,6 +136,19 @@ The full table of contents is in [docs/README.md](docs/README.md).
 Connections and variables are set as environment variables in `docker-compose.yaml`.
 They work in every DAG but don't appear in the UI lists (see chapter 15).
 
+## Configuration
+
+Docker Compose reads these variables from `.env` (create it with `make env` or `cp .env.example .env`; `.env` is git-ignored).
+
+| Variable | Example value | Purpose |
+|---|---|---|
+| `AIRFLOW_UID` | `50000` | Host user id that owns files written by containers (on Linux use `id -u`) |
+| `AIRFLOW_IMAGE_NAME` | `apache/airflow:3.4.0` | Airflow image used by every container |
+| `_AIRFLOW_WWW_USER_USERNAME` | `airflow` | Initial UI username |
+| `_AIRFLOW_WWW_USER_PASSWORD` | `<your-password>` | Initial UI password (the example file ships a local-only default) |
+| `FERNET_KEY` | `<your-fernet-key>` | Encrypts stored connection and variable secrets; empty works for local learning only |
+| `AIRFLOW__API_AUTH__JWT_SECRET` | `<your-jwt-secret>` | Signs JWTs between Airflow components; change for anything non-local |
+
 ## Running the tests
 
 ```bash
@@ -150,3 +171,11 @@ Details are in [docs/27-testing-dags.md](docs/27-testing-dags.md).
 - **Known Airflow 3.4.0 issue:** `EventsTimetable` from `airflow.sdk` fails to serialize, so the
   scheduling examples leave it out. The details are in chapter 18.
 - Official documentation: https://airflow.apache.org/docs/apache-airflow/stable/
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+## Author
+
+Umesh Khatiwada - [github.com/umesh-khatiwada](https://github.com/umesh-khatiwada)
